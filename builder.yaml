@@ -1,0 +1,18 @@
+components:
+  - name: shopping-agent
+    role: web
+    platform: python
+    platformVersion: "3.14"
+    path: /
+    build: >-
+      python -m pip install uv==0.13.9 &&
+      mkdir -p "$DESTINATION_DIR" &&
+      uv export --locked --no-dev --no-emit-project --output-file "$DESTINATION_DIR/requirements.txt" &&
+      python -m pip install --require-hashes --target "$DESTINATION_DIR/.deps" -r "$DESTINATION_DIR/requirements.txt" &&
+      cp -R app.py src "$DESTINATION_DIR/"
+    run:
+      port: 8501
+      start: >-
+        sh -c 'export DB_PATH="${DB_PATH:-/tmp/shopping-agent/store.db}" PYTHONPATH="./.deps";
+        exec python -m streamlit run app.py --server.address=0.0.0.0 --server.port=8501 --server.headless=true'
+      healthCheckPath: /_stcore/health
