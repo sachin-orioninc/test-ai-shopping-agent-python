@@ -14,4 +14,6 @@ The SQLite database (`resources/store.db`) is created automatically on first run
 
 Use the repository root as the source root. Commit and push [builder.yaml](./builder.yaml) to the branch configured in Builder, then deploy that revision. Supply `GOOGLE_API_KEY` through Builder's app configuration, not in the repository or manifest. Builder's manual variables are visible to both the build and runtime.
 
+The Builder startup command explicitly disables Streamlit development mode because Streamlit treats the bundled `.deps` directory as a development install and otherwise rejects the configured port.
+
 After deployment, try a chat message in the browser; the health check only verifies that Streamlit responds over HTTP, not that its WebSocket or Gemini connection works. Builder uses temporary SQLite storage for this demo. Orders can be lost when an instance is replaced or restarted.
