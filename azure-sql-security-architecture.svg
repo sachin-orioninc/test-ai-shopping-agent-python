@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1030" viewBox="0 0 1600 1030" role="img" aria-labelledby="title description">
+  <title id="title">Shopping Agent Azure SQL security architecture</title>
+  <desc id="description">Security architecture showing a browser connecting to a Streamlit app in App Service Builder. The app obtains an Entra token using its managed identity, connects to Azure SQL over encrypted TDS, and uses an API key to call Gemini. An administrator initializes the database separately. Notes distinguish existing implementation from deployment controls.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#42688a"/>
+    </marker>
+    <style>
+      text { font-family: "Segoe UI", Arial, sans-serif; fill: #192f46; }
+      .title { font-size: 32px; font-weight: 700; }
+      .subtitle { font-size: 17px; fill: #536b80; }
+      .zone-label { font-size: 16px; font-weight: 700; letter-spacing: 1px; fill: #536b80; }
+      .card-title { font-size: 22px; font-weight: 700; }
+      .heading { font-size: 18px; font-weight: 700; }
+      .body { font-size: 16px; }
+      .small { font-size: 14px; fill: #435d75; }
+      .flow { font-size: 15px; font-weight: 600; fill: #285074; }
+      .tag { font-size: 13px; font-weight: 700; }
+      .note { font-size: 15px; fill: #593c1c; }
+      .line { fill: none; stroke: #42688a; stroke-width: 2.5; marker-end: url(#arrow); }
+      .dashed { stroke-dasharray: 8 6; }
+    </style>
+  </defs>
+  <rect width="1600" height="1030" fill="#f3f7fb"/>
+  <text x="54" y="58" class="title">Shopping Agent: Azure SQL security architecture</text>
+  <text x="54" y="88" class="subtitle">Current application design and deployment controls to configure | App Service Builder preview</text>
+
+  <!-- Trust boundaries -->
+  <rect x="40" y="125" width="245" height="584" rx="18" fill="#ffffff" stroke="#cbd9e6" stroke-width="2"/>
+  <text x="60" y="158" class="zone-label">USER DEVICE</text>
+  <rect x="315" y="125" width="850" height="584" rx="18" fill="#edf6ff" stroke="#90badb" stroke-width="2"/>
+  <text x="338" y="158" class="zone-label">AZURE APP SERVICE BUILDER</text>
+  <rect x="1195" y="125" width="365" height="584" rx="18" fill="#ffffff" stroke="#cbd9e6" stroke-width="2"/>
+  <text x="1218" y="158" class="zone-label">IDENTITY &amp; EXTERNAL SERVICES</text>
+
+  <!-- Browser -->
+  <rect x="60" y="300" width="205" height="170" rx="12" fill="#f7fafc" stroke="#b6cadd"/>
+  <text x="80" y="333" class="card-title">Browser</text>
+  <text x="80" y="363" class="body">Streamlit chat</text>
+  <text x="80" y="391" class="small">No SQL credential</text>
+  <text x="80" y="412" class="small">or Gemini key</text>
+  <text x="80" y="446" class="small">Visitor sign-in:</text>
+  <text x="80" y="466" class="small">configure in Builder</text>
+
+  <!-- App components -->
+  <rect x="345" y="196" width="495" height="335" rx="12" fill="#ffffff" stroke="#83a9ca" stroke-width="2"/>
+  <text x="367" y="230" class="card-title">Streamlit shopping app</text>
+  <text x="367" y="257" class="small">Python web process | Server-side credentials</text>
+  <rect x="366" y="279" width="212" height="97" rx="9" fill="#f2f7fc" stroke="#c1d5e7"/>
+  <text x="383" y="308" class="heading">Chat UI</text>
+  <text x="383" y="333" class="small">Session state in memory</text>
+  <text x="383" y="353" class="small">HTTPS + WebSocket</text>
+  <rect x="598" y="279" width="220" height="97" rx="9" fill="#f2f7fc" stroke="#c1d5e7"/>
+  <text x="615" y="308" class="heading">LangChain agent</text>
+  <text x="615" y="333" class="small">Product / order tools</text>
+  <text x="615" y="353" class="small">Calls Gemini server-side</text>
+  <rect x="366" y="402" width="452" height="104" rx="9" fill="#eaf7f1" stroke="#9bcfbb"/>
+  <text x="383" y="431" class="heading">Azure SQL connection</text>
+  <text x="383" y="455" class="small">mssql-python + ManagedIdentityCredential</text>
+  <text x="383" y="477" class="small">Encrypt=yes; TrustServerCertificate=no</text>
+
+  <rect x="860" y="224" width="275" height="148" rx="11" fill="#ffffff" stroke="#a9c5d9"/>
+  <text x="878" y="254" class="heading">Runtime configuration</text>
+  <text x="878" y="279" class="small">SQL server and database</text>
+  <text x="878" y="301" class="small">Managed identity selection</text>
+  <text x="878" y="323" class="small">Gemini API key</text>
+  <text x="878" y="347" class="small">Builder variables: build + runtime</text>
+
+  <rect x="345" y="566" width="790" height="113" rx="11" fill="#fff9eb" stroke="#e0c782"/>
+  <text x="365" y="593" class="heading">Separate administration / setup</text>
+  <text x="365" y="618" class="small">Entra administrator: create database principal and grant least-privilege access.</text>
+  <text x="365" y="641" class="small">Privileged operator: run schema setup and optional one-time sample seed using Azure CLI credentials.</text>
+  <text x="365" y="663" class="small">The application does not run schema creation or seeding at startup.</text>
+
+  <!-- External services -->
+  <rect x="1220" y="190" width="314" height="112" rx="11" fill="#f2edff" stroke="#baa7df"/>
+  <text x="1240" y="223" class="heading">Microsoft Entra ID</text>
+  <text x="1240" y="248" class="small">Issues SQL access token to the</text>
+  <text x="1240" y="269" class="small">configured managed identity</text>
+
+  <rect x="1220" y="348" width="314" height="150" rx="11" fill="#e9f8f6" stroke="#83c7bc"/>
+  <text x="1240" y="380" class="heading">Azure SQL Database</text>
+  <text x="1240" y="406" class="small">Validates identity and DB grants</text>
+  <text x="1240" y="429" class="small">products | reviews | orders</text>
+  <text x="1240" y="452" class="small">Runtime: SELECT + order INSERT</text>
+  <text x="1240" y="476" class="small">Durable storage; back up separately</text>
+
+  <rect x="1220" y="548" width="314" height="112" rx="11" fill="#fff3e8" stroke="#efc49a"/>
+  <text x="1240" y="581" class="heading">Google Gemini API</text>
+  <text x="1240" y="606" class="small">HTTPS with server-side API key</text>
+  <text x="1240" y="629" class="small">Receives chat context and tool results</text>
+
+  <!-- Flows -->
+  <path class="line" d="M 265 340 H 345"/>
+  <path class="line" d="M 345 365 H 265"/>
+  <text x="266" y="325" class="flow">HTTPS</text>
+  <text x="268" y="391" class="small">WebSocket</text>
+  <path class="line" d="M 578 328 H 598"/>
+  <path class="line" d="M 708 376 V 402"/>
+  <path class="line dashed" d="M 840 210 H 1100 V 190 H 1220"/>
+  <rect x="884" y="161" width="224" height="25" rx="4" fill="#edf6ff"/>
+  <text x="890" y="179" class="flow">1. Request SQL token</text>
+  <path class="line" d="M 818 453 H 1220"/>
+  <rect x="881" y="422" width="282" height="25" rx="4" fill="#edf6ff"/>
+  <text x="888" y="440" class="flow">2. Encrypted SQL + Entra token</text>
+  <path class="line" d="M 818 350 H 842 V 536 H 1177 V 595 H 1220"/>
+  <text x="961" y="554" class="flow">HTTPS / API key</text>
+  <path class="line dashed" d="M 1135 619 H 1178 V 482 H 1220"/>
+  <text x="1008" y="607" class="small">Admin setup</text>
+
+  <!-- Security guidance -->
+  <rect x="40" y="735" width="1520" height="250" rx="16" fill="#ffffff" stroke="#d4e0ea"/>
+  <text x="64" y="771" class="card-title">Security and operational boundaries</text>
+  <rect x="65" y="789" width="720" height="171" rx="10" fill="#f2f7fc"/>
+  <text x="83" y="818" class="heading">Controls implemented in the app</text>
+  <text x="83" y="847" class="body">- SQL token acquired server-side; no SQL password in code.</text>
+  <text x="83" y="874" class="body">- Encrypted SQL connection with server certificate validation.</text>
+  <text x="83" y="901" class="body">- Parameterized queries; seed refuses non-empty tables.</text>
+  <text x="83" y="928" class="body">- Local setup uses Azure CLI identity, not the hosted identity.</text>
+  <rect x="805" y="789" width="730" height="171" rx="10" fill="#fff7e8" stroke="#efd6a5"/>
+  <text x="823" y="818" class="heading">Must configure and verify</text>
+  <text x="823" y="847" class="note">- Enable visitor sign-in, SQL permissions, and a suitable network policy.</text>
+  <text x="823" y="874" class="note">- Builder preview has no private networking or stable outbound IP.</text>
+  <text x="823" y="901" class="note">- Protect and rotate the Gemini key; Builder variables also reach builds.</text>
+  <text x="823" y="928" class="note">- Add server-side order authorization / confirmation before real orders.</text>
+  <text x="64" y="1010" class="small">Solid arrows: application traffic | Dashed arrows: identity or administration | Diagram describes intended deployment, not verified Azure configuration.</text>
+</svg>

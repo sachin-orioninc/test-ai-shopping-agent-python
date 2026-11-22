@@ -1,49 +1,49 @@
-import sqlite3
-import os
+"""Explicit SQL Server / Azure SQL schema setup and optional sample catalog seed."""
 
-DB_PATH = os.getenv(
-    "DB_PATH", os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "resources", "store.db"))
-)
+import argparse
+
+from src.database import connect
 
 
-def create_database():
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
+def create_schema(cursor):
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS products (
-            id INTEGER PRIMARY KEY,
-            name TEXT NOT NULL,
-            category TEXT,
-            price REAL,
-            description TEXT,
-            is_organic INTEGER DEFAULT 0
+        IF OBJECT_ID(N'dbo.products', N'U') IS NULL
+        CREATE TABLE dbo.products (
+            id INT NOT NULL PRIMARY KEY,
+            name NVARCHAR(255) NOT NULL,
+            category NVARCHAR(100),
+            price DECIMAL(10, 2),
+            description NVARCHAR(MAX),
+            is_organic BIT NOT NULL DEFAULT 0
+        )
+    """)
+    cursor.execute("""
+        IF OBJECT_ID(N'dbo.reviews', N'U') IS NULL
+        CREATE TABLE dbo.reviews (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            product_id INT REFERENCES dbo.products(id),
+            rating FLOAT,
+            reviewer_name NVARCHAR(255),
+            review_text NVARCHAR(MAX)
+        )
+    """)
+    cursor.execute("""
+        IF OBJECT_ID(N'dbo.orders', N'U') IS NULL
+        CREATE TABLE dbo.orders (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            product_id INT NOT NULL REFERENCES dbo.products(id),
+            product_name NVARCHAR(255) NOT NULL,
+            price DECIMAL(10, 2) NOT NULL,
+            ordered_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
         )
     """)
 
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS reviews (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            product_id INTEGER,
-            rating REAL,
-            reviewer_name TEXT,
-            review_text TEXT,
-            FOREIGN KEY (product_id) REFERENCES products(id)
-        )
-    """)
 
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS orders (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            product_id INTEGER NOT NULL,
-            product_name TEXT NOT NULL,
-            price REAL NOT NULL,
-            ordered_at TEXT NOT NULL DEFAULT (datetime('now')),
-            FOREIGN KEY (product_id) REFERENCES products(id)
-        )
-    """)
-
+def seed_catalog(cursor):
+    for table in ("products", "reviews", "orders"):
+        cursor.execute(f"SELECT COUNT(*) FROM dbo.{table} WITH (TABLOCKX, HOLDLOCK)")
+        if cursor.fetchone()[0]:
+            raise RuntimeError("Seed requires empty products, reviews, and orders tables; no data was changed.")
     products = [
         # --- Honey (8) ---
         (1,  "Organic Raw Honey",            "honey",        14.99, "Pure organic raw honey, unfiltered and cold-pressed",                1),
@@ -85,7 +85,10 @@ def create_database():
         (31, "Organic Coconut Milk",         "dairy-alt",     3.99, "Full-fat organic coconut milk, great for curries",                   1),
         (32, "Soy Milk",                     "dairy-alt",     3.49, "Unsweetened soy milk, high protein",                                 0),
     ]
-    cursor.executemany("INSERT OR REPLACE INTO products VALUES (?, ?, ?, ?, ?, ?)", products)
+    cursor.executemany(
+        "INSERT INTO dbo.products (id, name, category, price, description, is_organic) VALUES (?, ?, ?, ?, ?, ?)",
+        products,
+    )
 
     # Avg ratings (for reference):
     # Honey:      1→4.625✓  2→3.833  3→4.833($$)  4→3.5  5→4.625✓  6→4.167  7→4.75✓  8→4.0
@@ -206,16 +209,19 @@ def create_database():
         (32, 3.5, "Yosef",  "Slightly thin but good for cereal."),
         (32, 3.5, "Zola",   "Decent soy milk, nothing special."),
     ]
-    cursor.execute("DELETE FROM reviews")
     cursor.executemany(
-        "INSERT INTO reviews (product_id, rating, reviewer_name, review_text) VALUES (?, ?, ?, ?)",
+        "INSERT INTO dbo.reviews (product_id, rating, reviewer_name, review_text) VALUES (?, ?, ?, ?)",
         reviews,
     )
 
-    conn.commit()
-    conn.close()
-    print(f"Database created at: {DB_PATH}")
-
 
 if __name__ == "__main__":
-    create_database()
+    parser = argparse.ArgumentParser(description="Create SQL tables in the configured database and optionally seed an empty catalog.")
+    parser.add_argument("--seed", action="store_true", help="Seed sample data only if all three tables are empty.")
+    args = parser.parse_args()
+    with connect() as conn:
+        with conn.cursor() as cursor:
+            create_schema(cursor)
+            if args.seed:
+                seed_catalog(cursor)
+    print("SQL schema is ready." + (" Sample catalog seeded." if args.seed else ""))

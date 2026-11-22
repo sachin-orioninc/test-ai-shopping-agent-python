@@ -1,12 +1,9 @@
 """Shopping agent built with LangChain and Google Gemini."""
 
-import os
-
 from dotenv import load_dotenv
 from langchain.agents import create_agent
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-from src.setup_db import DB_PATH, create_database
 from src.tools import TOOLS
 
 load_dotenv()
@@ -25,13 +22,7 @@ SYSTEM_PROMPT = """You are a friendly shopping assistant for an online grocery s
 - Keep answers concise. All prices are in USD."""
 
 
-def ensure_database() -> None:
-    if not os.path.exists(DB_PATH):
-        create_database()
-
-
 def build_agent():
-    ensure_database()
     llm = ChatGoogleGenerativeAI(model=MODEL_NAME, temperature=0)
     return create_agent(llm, tools=TOOLS, system_prompt=SYSTEM_PROMPT)
 
