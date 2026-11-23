@@ -79,3 +79,17 @@ uv run streamlit run app.py
 | Login failed for `'<token-identified principal>'` | Verify the target database and create/grant its user for the selected identity. An existing user must map to the current principal/object ID; Azure Owner/Contributor roles alone do not grant SQL access. |
 
 References: [Builder identity](https://builder.appservice.azure.com/docs/guides/managed-identity/) · [Builder networking](https://builder.appservice.azure.com/docs/guides/networking/) · [Azure SQL Python guide](https://learn.microsoft.com/en-us/azure/azure-sql/database/azure-sql-python-quickstart).
+
+## AI provider: Google Gemini
+
+The app uses LangChain's `langchain-google-genai` integration (`ChatGoogleGenerativeAI`) with `GOOGLE_API_KEY`. The configured model is `gemini-3.5-flash-lite`.
+
+**Other AI providers do not work out of the box.** Changing only the API key or model name is not enough to switch to OpenAI, Azure OpenAI, Anthropic, or another provider. Refactor these places for your choice:
+
+| Where | What to change |
+| --- | --- |
+| [src/agent.py](./src/agent.py) | Replace the provider import and client in `build_agent()`, update `MODEL_NAME`, and check `chat()` response handling. Choose a model/integration that supports LangChain tool calling. For another compatible Gemini model, change only `MODEL_NAME`. |
+| [pyproject.toml](./pyproject.toml) | Replace the Gemini integration dependency with the chosen provider's package using `uv remove` / `uv add`; these also update [uv.lock](./uv.lock). |
+| [app.py](./app.py) | Replace the `GOOGLE_API_KEY` validation and error message with the chosen provider's configuration checks. |
+| Local `.env` and Builder variables | Set the provider's required credentials, endpoint, deployment name, or API version as applicable. Never commit keys. |
+| [tests/test_chat_ui.py](./tests/test_chat_ui.py) | Update the mocked credentials and response fixture if needed, then verify search and order tool calls with the new provider. |
